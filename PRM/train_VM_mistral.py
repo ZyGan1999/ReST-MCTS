@@ -13,9 +13,12 @@ import pandas as pd
 
 max_length = 900
 
+#base_model_path = '/data/ganzeyu/Mistral-7B-MetaMath'
+base_model_path = '/home/ganzeyu/Mistral-7B'
+
 # Load the pre-trained Mistral-7b model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained("/data/ganzeyu/Mistral-7B-MetaMath", trust_remote_code=True)
-base_model = AutoModelForCausalLM.from_pretrained("/data/ganzeyu/Mistral-7B-MetaMath", trust_remote_code=True, torch_dtype=torch.bfloat16).cuda()
+tokenizer = AutoTokenizer.from_pretrained(base_model_path, trust_remote_code=True)
+base_model = AutoModelForCausalLM.from_pretrained(base_model_path, trust_remote_code=True, torch_dtype=torch.bfloat16).cuda()
 tokenizer.pad_token = tokenizer.eos_token
 
 # Custom Dataset class

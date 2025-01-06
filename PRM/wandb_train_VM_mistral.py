@@ -134,6 +134,7 @@ for epoch in range(num_epochs):
     train_loss = 0.0
 
     for batch in tqdm(train_dataloader):
+        global_step += 1
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
         labels = batch['label'].to(dtype=torch.float32).to(device)

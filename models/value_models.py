@@ -1,6 +1,6 @@
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 import torch
 import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM

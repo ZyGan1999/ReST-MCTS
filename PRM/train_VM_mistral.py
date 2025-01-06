@@ -1,6 +1,6 @@
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import json
 import numpy as np
 import torch
@@ -14,8 +14,9 @@ import pandas as pd
 max_length = 900
 
 # Load the pre-trained Mistral-7b model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained("/workspace/ckpt/MetaMath-Mistral-7B", trust_remote_code=True)
-base_model = AutoModelForCausalLM.from_pretrained("/workspace/ckpt/MetaMath-Mistral-7B", trust_remote_code=True, torch_dtype=torch.bfloat16).cuda()
+tokenizer = AutoTokenizer.from_pretrained("/data/ganzeyu/Mistral-7B-MetaMath", trust_remote_code=True)
+base_model = AutoModelForCausalLM.from_pretrained("/data/ganzeyu/Mistral-7B-MetaMath", trust_remote_code=True, torch_dtype=torch.bfloat16).cuda()
+tokenizer.pad_token = tokenizer.eos_token
 
 # Custom Dataset class
 class MyDataset(Dataset):
@@ -48,8 +49,16 @@ class MyDataset(Dataset):
 class Mistral_VM(nn.Module):
     def __init__(self, base, vocab_size=32000):
         super(Mistral_VM, self).__init__()
+        # self.base_model = base
+        # self.LN = nn.Linear(vocab_size, 1)
+        # 1) 冻结 base_model 的所有参数
+        for param in base.parameters():
+            param.requires_grad = False
+
         self.base_model = base
+        # 2) 仅保留 LN 这一层的可训练参数
         self.LN = nn.Linear(vocab_size, 1)
+
 
     def forward(self, input_ids, attention_mask):
         outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask).logits[:, -1, :]
@@ -94,14 +103,24 @@ print(vocab_size)
 VM = Mistral_VM(base_model, vocab_size)
 VM.to(device)
 
+# 额外打印一下哪些参数在训练
+for name, param in VM.named_parameters():
+    if param.requires_grad:
+        print(name, param.size())
+
 # Define loss function and optimizer
 criterion = nn.MSELoss()
-optimizer = AdamW(VM.parameters(), lr=3e-6)
-num_epochs = 2 # 2 or 3
+#optimizer = AdamW(VM.parameters(), lr=3e-6)
+# 注意此时只有 LN 的参数会被更新，base_model 的参数已冻结
+optimizer = AdamW(filter(lambda p: p.requires_grad, VM.parameters()), lr=3e-6)
+num_epochs = 3 # 2 or 3
 # Training and validation loop
 best_val_loss = 10000000
 train_losses = []
 val_losses = []
+
+#torch.save(VM.state_dict(), "records/Mistral/VM_best_checkpoint.pt")
+
 for epoch in range(num_epochs):
     print(f"{epoch}/{num_epochs} training")
     # Training
@@ -122,6 +141,7 @@ for epoch in range(num_epochs):
 
     avg_train_loss = train_loss / len(train_dataloader)
     train_losses.append(avg_train_loss)
+    
 
     # Validation
     VM.eval()
@@ -177,4 +197,3 @@ for i in range(len(test_preds)):
         cnt += 1
 test_acc = cnt / len(test_preds)
 print(f"Test accuracy: {test_acc:.4f}")
-```

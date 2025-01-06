@@ -6,6 +6,8 @@ import json
 from models.inference_models import get_local_response, get_inference_model, get_inference_model_llama, get_local_response_llama, get_inference_model_mistral, get_local_response_mistral
 from models.value_models import get_local_value, get_value_model, get_value_model_prm, get_value_model_mistral, get_value_model_prm_mistral
 from transformers import AutoModel, AutoTokenizer
+import torch
+
 
 # openai api settings
 API_KEY = 'sk-**'
@@ -22,12 +24,12 @@ BASE_MODEL_GLM = 'GLM4'
 # local model settings
 # if you want to use local models, set these two directories
 # INFERENCE_MODEL_DIR = "/workspace/ckpt/Meta-Llama-3-8B-Instruct"
-INFERENCE_MODEL_DIR = None
+INFERENCE_MODEL_DIR = "/data/ganzeyu/Llama-3-8B-Instruct"
 LOCAL_INFERENCE_TYPES = ['glm', 'llama', 'mistral']
-LOCAL_INFERENCE_IDX = 0
+LOCAL_INFERENCE_IDX = 1
 
 # VALUE_BASE_MODEL_DIR = "/workspace/ckpt/MetaMath-Mistral-7B"
-VALUE_BASE_MODEL_DIR = None
+VALUE_BASE_MODEL_DIR = "/data/ganzeyu/Mistral-7B-MetaMath"
 # VALUE_MODEL_STATE_DICT = "/Path/to/PRM/records/Mistral/VM_best_checkpoint.pt"
 VALUE_MODEL_STATE_DICT = None
 LOCAL_VALUE_TYPES = ['glm', 'mistral']
@@ -36,6 +38,61 @@ USE_PRM = False
 
 INFERENCE_LOCAL = False
 VALUE_LOCAL = False
+
+# completion_tokens = 0
+# prompt_tokens = 0
+
+# print(f'in model.py, cuda is {torch.cuda.is_available()}')
+# def init_model():
+#     """
+#     将原先在 import 时直接执行的逻辑放到此函数中。
+#     使用方在 import model 之后，需手动调用 model.init_model() 才会执行以下内容。
+#     """
+#     global INFERENCE_LOCAL, VALUE_LOCAL
+#     global inference_model, inference_tokenizer
+#     global value_model, value_tokenizer
+#     global completion_tokens, prompt_tokens
+#     global inference_type
+
+#     # implement the inference model
+#     if INFERENCE_MODEL_DIR is not None:
+#         INFERENCE_LOCAL = True
+#         inference_type = LOCAL_INFERENCE_TYPES[LOCAL_INFERENCE_IDX]
+#         if inference_type == 'glm':
+#             inference_tokenizer, inference_model = get_inference_model(INFERENCE_MODEL_DIR)
+#         elif inference_type == 'llama':
+#             inference_tokenizer, inference_model = get_inference_model_llama(INFERENCE_MODEL_DIR)
+#         else:
+#             inference_tokenizer, inference_model = get_inference_model_mistral(INFERENCE_MODEL_DIR)
+#         print(f'[!!!] in model.py, device of model is {inference_model.device}')
+
+#     # implement the value model (reward model)
+#     if VALUE_BASE_MODEL_DIR is not None:
+#         VALUE_LOCAL = True
+#         value_type = LOCAL_VALUE_TYPES[LOCAL_VALUE_IDX]
+#         if USE_PRM:
+#             if value_type == 'glm':
+#                 value_tokenizer, value_model = get_value_model_prm(VALUE_BASE_MODEL_DIR, VALUE_MODEL_STATE_DICT)
+#             else:
+#                 value_tokenizer, value_model = get_value_model_prm_mistral(VALUE_BASE_MODEL_DIR, VALUE_MODEL_STATE_DICT)
+#         else:
+#             if value_type == 'glm':
+#                 value_tokenizer, value_model = get_value_model(VALUE_BASE_MODEL_DIR, VALUE_MODEL_STATE_DICT)
+#             else:
+#                 value_tokenizer, value_model = get_value_model_mistral(VALUE_BASE_MODEL_DIR, VALUE_MODEL_STATE_DICT)
+
+#     # openai 相关
+#     api_key = API_KEY
+#     if api_key != "":
+#         openai.api_key = api_key
+#         print(f'api_key: {api_key}\n')
+#     else:
+#         print("Warning: OPENAI_API_KEY is not set")
+
+#     api_base = API_BASE
+#     if api_base != "":
+#         print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
+#         openai.api_base = api_base
 
 # implement the inference model
 if INFERENCE_MODEL_DIR is not None:
@@ -47,6 +104,8 @@ if INFERENCE_MODEL_DIR is not None:
         inference_tokenizer, inference_model = get_inference_model_llama(INFERENCE_MODEL_DIR)
     else:
         inference_tokenizer, inference_model = get_inference_model_mistral(INFERENCE_MODEL_DIR)
+
+#print(f'[!!!] in model.py, device of model is {inference_model.device}')
 
 # implement the value model (reward model)
 if VALUE_BASE_MODEL_DIR is not None:
@@ -77,7 +136,7 @@ if api_base != "":
     openai.api_base = api_base
 
 
-@backoff.on_exception(backoff.expo, openai.error.OpenAIError)
+#@backoff.on_exception(backoff.expo, openai.error.OpenAIError)
 def completions_with_backoff(**kwargs):
     return openai.ChatCompletion.create(**kwargs)
 
